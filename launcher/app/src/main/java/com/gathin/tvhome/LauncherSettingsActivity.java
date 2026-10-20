@@ -5,11 +5,15 @@ import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ResolveInfo;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /** Remote-friendly settings owned by the launcher; system settings stay one row away. */
 public final class LauncherSettingsActivity extends Activity {
@@ -27,6 +31,7 @@ public final class LauncherSettingsActivity extends Activity {
         super.onCreate(state);
         setContentView(R.layout.activity_launcher_settings);
         choices = getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE);
+        findViewById(R.id.appVisibilityChoice).setOnClickListener(v -> showAppVisibility());
         Config config = Config.load(this);
         columns = config.columns;
         animations = config.animations;
@@ -99,6 +104,40 @@ public final class LauncherSettingsActivity extends Activity {
         choices.edit().putBoolean("advanced_effects", enabled).apply();
         setResult(RESULT_OK);
         refresh();
+    }
+
+    private void showAppVisibility() {
+        List<ResolveInfo> apps = AppCatalog.discover(this);
+        apps.removeIf(ri -> AppVisibility.USB_PACKAGE.equals(ri.activityInfo.packageName));
+        apps.sort((a, b) -> String.valueOf(a.loadLabel(getPackageManager())).compareToIgnoreCase(
+                String.valueOf(b.loadLabel(getPackageManager()))));
+        Set<String> hidden = new HashSet<>(Config.load(this).hiddenApps);
+        String[] labels = new String[apps.size()];
+        boolean[] checked = new boolean[apps.size()];
+        for (int i = 0; i < apps.size(); i++) {
+            ResolveInfo ri = apps.get(i);
+            labels[i] = Cards.cleanLabel(String.valueOf(ri.loadLabel(getPackageManager())), ri.activityInfo.packageName);
+            checked[i] = !hidden.contains(ri.activityInfo.packageName);
+        }
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle(R.string.app_visibility_title)
+                .setMultiChoiceItems(labels, checked, (d, which, show) -> {
+                    String pkg = apps.get(which).activityInfo.packageName;
+                    if (show) hidden.remove(pkg); else hidden.add(pkg);
+                })
+                .setPositiveButton(R.string.save_app_visibility, (d, which) -> {
+                    choices.edit().putStringSet(AppVisibility.HIDDEN_KEY, hidden).apply();
+                    setResult(RESULT_OK);
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .create();
+        dialog.setOnShowListener(d -> {
+            if (!apps.isEmpty()) {
+                dialog.getListView().requestFocus();
+                dialog.getListView().setSelection(0);
+            }
+        });
+        dialog.show();
     }
 
     private void refresh() {

@@ -64,4 +64,9 @@
     <string name="card_state_new">New</string>
     <string name="card_state_new_key">New key</string>
     <string name="card_state_new_label">New name</string>
+    <string name="usb_files">USB / Files</string>
+    <string name="app_visibility">Show / hide apps</string>
+    <string name="app_visibility_title">Select apps to show</string>
+    <string name="save_app_visibility">Save</string>
+    <string name="app_visibility_hint">Check apps with OK, then Save. USB / Files stays pinned. Hidden apps remain installed.</string>
 </resources>

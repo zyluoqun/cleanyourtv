@@ -1,0 +1,7 @@
+# Batch 1: ads, push, telemetry, guide
+com.tianci.ad
+com.tianci.push
+com.coocaa.sysreport
+com.coocaa.guide
+com.coocaa.theme_package_ccos_nine
+com.coocaa.app_browser

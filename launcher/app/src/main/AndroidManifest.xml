@@ -18,6 +18,11 @@
     <!-- Android 11+ package visibility: lets the launcher list the TV apps it shows as tiles, and the
          apps that declare a module card (docs/specs/card.md). -->
     <queries>
+        <package android:name="com.tianci.localmedia" />
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
@@ -53,6 +58,15 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <!-- Listed in the TV's own app list, so it can be opened from the stock home screen too. -->
+            <!-- Coocaa firmware uses private home intents instead of the standard HOME category. -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <action android:name="coocaa.intent.action.HOME" />
+                <action android:name="coocaa.intent.action.HOME_MAIN" />
+                <category android:name="android.intent.category.HOME.CC" />
+                <category android:name="android.intent.category.HOME.CC_MAIN" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />

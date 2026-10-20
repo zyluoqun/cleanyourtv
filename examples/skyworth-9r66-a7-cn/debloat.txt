@@ -1,0 +1,49 @@
+# Skyworth (创维/酷开 CCS) 9R66_A7, Realtek rtd289x_tv010_db_9R66
+# Android 6.0 (MRA58K), ro.product.brand=Skyworth, user test-keys
+# Stock home: com.tianci.movieplatform via custom category android.intent.category.HOME.CC
+#   (a third-party launcher using the standard HOME intent cannot take over on this firmware)
+# Live TV / inputs: com.tianci.tv, com.skyworth.dtv, com.skyworthdigital.* (kept)
+#
+# Applied with:  tools\disable.ps1 -TvHost <ip> examples\skyworth-9r66-a7-cn\debloat.txt
+# Undo with:     tools\restore.ps1 -TvHost <ip> examples\skyworth-9r66-a7-cn\debloat.txt
+# Everything is DISABLED for user 0, never uninstalled. Comment out a line to keep it.
+
+# --- Ads, push, telemetry -----------------------------------------------
+com.tianci.ad            # boot ad, screensaver ad, Taobao ad SDK (BootViewActivity/AdActivity)
+com.tianci.push          # marketing/notification push
+com.coocaa.activecenter  # promotion/activity web center (was already disabled)
+com.coocaa.sysreport     # usage telemetry reporting
+com.coocaa.guide         # first-run guide / recommendation funnel
+
+# --- Home-screen content rows and preloads ------------------------------
+com.coocaa.theme_package_ccos_nine  # partner theme/preload package
+com.coocaa.app_browser              # promoted app/web browser rows
+com.coocaa.dangbeimarket            # third-party app store (preloaded)
+com.tianci.appstore                 # stock app store (declined)
+
+# --- Preloaded video / shopping apps (ad-heavy, unused) -----------------
+cn.cibntv.ott            # Youku OTT
+com.cibn.tv              # CIBN video
+cn.tvplay.gunworld       # video overlay
+com.js.litchi            # Gala/银河奇异果 video
+com.ktcp.video           # Tencent video
+com.bajintech.karaok     # karaoke
+
+# --- Demo / factory / test leftovers ------------------------------------
+com.example.smartapp
+c.cc.updatademo
+com.skyworth.testtime
+com.coocaa.teampresent
+
+# --- Not kept (declined) ------------------------------------------------
+com.skyworth.angel.voice # voice assistant
+com.coocaa.miracast      # screen mirroring
+com.coocaa.skycast.tool  # skycast casting helper
+
+# --- Kept on purpose (system / inputs / comms) --------------------------
+# com.tianci.movieplatform  stock home
+# com.tianci.de             secondary home
+# com.tianci.system, com.skyworth.setting, com.tianci.tv, com.skyworth.dtv, com.skyworthdigital.*
+# com.coocaa.os.ccosservice, com.coocaa.os.customerservice, com.coocaa.os.softsettings,
+# com.coocaa.messageprovider, com.android.* (framework), com.skyworth.tianciime (IME),
+# com.android.bluetooth, com.rtk.btpc, com.coocaa.emergencywarning

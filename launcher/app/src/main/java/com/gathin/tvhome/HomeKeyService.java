@@ -7,9 +7,8 @@ import android.view.KeyEvent;
 import android.view.accessibility.AccessibilityEvent;
 
 /**
- * Sends the remote's Home button to this launcher on remotes that emit KEYCODE_ALL_APPS for Home
- * (Xiaomi sticks and boxes). Android TV 9 routes that key only to the system-image launcher, so once
- * the stock launcher is disabled the button does nothing. Every other key passes through untouched.
+ * Sends Home to this launcher, including Coocaa firmware with a hard-coded stock home component
+ * and remotes that emit KEYCODE_ALL_APPS (Xiaomi sticks and boxes). Enabled only by user opt-in.
  *
  * Enable over adb:
  *   settings put secure enabled_accessibility_services com.gathin.tvhome/.HomeKeyService
@@ -50,19 +49,36 @@ public class HomeKeyService extends AccessibilityService {
             }
             return true;
         }
-        if (event.getKeyCode() != KeyEvent.KEYCODE_ALL_APPS) return false;
+        if (event.getKeyCode() != KeyEvent.KEYCODE_ALL_APPS
+                && event.getKeyCode() != KeyEvent.KEYCODE_HOME) return false;
         if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) {
-            Intent home = new Intent(Intent.ACTION_MAIN)
-                    .addCategory(Intent.CATEGORY_HOME)
-                    .setPackage(getPackageName())
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
-            startActivity(home);
+            android.util.Log.i("TvHomeKey", "Opening launcher for keyCode=" + event.getKeyCode());
+            openHome();
         }
         return true;
     }
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
+        if (event.getEventType() != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
+                || !"com.tianci.movieplatform".contentEquals(
+                        event.getPackageName() == null ? "" : event.getPackageName())) return;
+        CharSequence activity = event.getClassName();
+        if (activity == null) return;
+        // Some Coocaa HOME paths bypass key filtering and explicitly open these activities.
+        // Redirect only the stock home window; playback, settings and other app windows are unaffected.
+        if (!"com.coocaa.homepage.vast.HomePageActivity".contentEquals(activity)
+                && !"com.ccos.cooui.movieplatform.MainActivity".contentEquals(activity)) return;
+        android.util.Log.i("TvHomeKey", "Redirecting Coocaa home: " + activity);
+        openHome();
+    }
+
+    private void openHome() {
+        Intent home = new Intent(Intent.ACTION_MAIN)
+                .addCategory(Intent.CATEGORY_HOME)
+                .setPackage(getPackageName())
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+        startActivity(home);
     }
 
     @Override

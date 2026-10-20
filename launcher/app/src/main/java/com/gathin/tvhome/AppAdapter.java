@@ -112,6 +112,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
     private final Context ctx;
     private final TileListener listener;
     private final int dockSize;
+    private final boolean singleRow;
     /** Dock order (config.xml dock_apps, or a theme's config.json). */
     private final List<String> favourites;
     /** Grid apps fill the dock slots dock_apps leaves free (config.xml, fill_dock). */
@@ -131,6 +132,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         this.ctx = ctx;
         this.listener = listener;
         this.dockSize = dockSize;
+        this.singleRow = cfg.singleRow;
         this.favourites = cfg.dockApps;
         this.fillDock = cfg.fillDock;
         this.hidden = new HashSet<>(cfg.hiddenApps);
@@ -149,8 +151,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
      */
     void reload(List<Cards.Card> cards) {
         PackageManager pm = ctx.getPackageManager();
-        Intent probe = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER);
-        List<ResolveInfo> found = pm.queryIntentActivities(probe, 0);
+        List<ResolveInfo> found = AppCatalog.discover(ctx);
         Map<String, Cards.Card> cardByPkg = new HashMap<>();
         for (Cards.Card c : cards) cardByPkg.put(c.pkg, c);
         List<Entry> fresh = new ArrayList<>();
@@ -168,7 +169,9 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             } else {
                 // Same cleaner as the card prompt: an app label with a bidi override or line separator must not
                 // redraw the tile name as something else (#117).
-                fresh.add(new Entry(Cards.cleanLabel(String.valueOf(ri.loadLabel(pm)), pkg), component, banner, icon));
+                String label = pkg.equals(AppVisibility.USB_PACKAGE) ? ctx.getString(R.string.usb_files)
+                        : Cards.cleanLabel(String.valueOf(ri.loadLabel(pm)), pkg);
+                fresh.add(new Entry(label, component, pkg.equals(AppVisibility.USB_PACKAGE) ? null : banner, icon));
             }
         }
         Collections.sort(fresh, (a, b) -> {
@@ -225,6 +228,10 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         int width = parent.getWidth() > 0 ? parent.getWidth() : parent.getMeasuredWidth();
         int inner = width - parent.getPaddingLeft() - parent.getPaddingRight();
         int w = tileWidthPx(inner, dockSize, density), h = tileHeightPx(w);
+        if (singleRow) {
+            v.setLayoutParams(new RecyclerView.LayoutParams(
+                    Math.max(w + Math.round(24 * density), inner / dockSize), itemHeightPx(h, density)));
+        }
         View card = v.findViewById(R.id.card);
         ViewGroup.LayoutParams cardLp = card.getLayoutParams();
         cardLp.width = w;
@@ -255,7 +262,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         h.card.setVisibility(View.VISIBLE);
         h.card.setFocusable(true);
         h.name.setText(e.name);
-        h.name.setVisibility(position < dockSize ? View.INVISIBLE : View.VISIBLE);   // the dock has no labels
+        h.name.setVisibility(singleRow || position < dockSize ? View.INVISIBLE : View.VISIBLE);   // the dock has no labels
         boolean focused = h.card.isFocused();   // a rebind after reload() can hit the focused tile
         h.name.setAlpha(focused ? 1f : 0f);
         h.card.setScaleX(focused && animations ? focusScale() : 1f);

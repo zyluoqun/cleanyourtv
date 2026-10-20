@@ -61,6 +61,7 @@ import androidx.dynamicanimation.animation.FloatPropertyCompat;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
 import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.io.File;
@@ -83,6 +84,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     static final String ACTION_LAUNCHER_SETTINGS = "com.gathin.tvhome.action.LAUNCHER_SETTINGS";
     /** Tiles per row and dock slots (res/values/config.xml, columns). Set in onCreate. */
     static int COLUMNS = 4;
+    private boolean singleRow;
     private boolean rtlAppGrid;
     private static final long MINUTE_MS = 60_000L;
     private String liveTvPkg;
@@ -213,6 +215,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // config.xml, overlaid by config.json from a pushed theme (see Config and tools/theme.sh).
         Config cfg = Config.load(this);
         COLUMNS = cfg.columns;
+        singleRow = cfg.singleRow;
         animations = cfg.animations;
         advancedEffects = cfg.animations && cfg.advancedEffects;
         reducedMotion = cfg.reducedMotion;
@@ -234,7 +237,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         ambient = findViewById(R.id.ambient);
         // The glow is one bitmap, so its alpha can be applied while drawing it. Otherwise every frame of
         // a fade renders it into a full-screen offscreen buffer first.
-        ambient.forceHasOverlappingRendering(false);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            ambient.forceHasOverlappingRendering(false);
+        }
         heroName = findViewById(R.id.heroName);
         greeting = findViewById(R.id.greeting);
         greetingColor = greeting.getCurrentTextColor();
@@ -254,7 +259,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         grid = findViewById(R.id.grid);
         rtlAppGrid = getResources().getBoolean(R.bool.rtl_app_grid);
         // Mirror only the app grid; the header and other locales keep their own layouts.
-        grid.setLayoutManager(new GridLayoutManager(this, COLUMNS) {
+        if (singleRow) {
+            grid.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, rtlAppGrid));
+        } else grid.setLayoutManager(new GridLayoutManager(this, COLUMNS) {
             @Override
             protected boolean isLayoutRTL() {
                 return rtlAppGrid;
@@ -289,7 +296,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         });
         grid.setHasFixedSize(true);
         grid.setItemAnimator(null);
-        grid.addItemDecoration(new DockDecoration(COLUMNS, density));
+        grid.addItemDecoration(new DockDecoration(singleRow ? Integer.MAX_VALUE : COLUMNS, density));
         if (animations) {
             int enterAnim = reducedMotion ? R.anim.tile_enter_reduced : R.anim.tile_enter;
             float enterDelay = reducedMotion ? 0f : 0.06f;
@@ -314,12 +321,26 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 grid.setPadding(grid.getPaddingLeft(), want, grid.getPaddingRight(), grid.getPaddingBottom());
             }
         });
+        if (singleRow) grid.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            // Horizontal children can receive initial focus before the bottom padding is laid out.
+            // Align the highlight and title with the final tile position as well.
+            View focused = grid.findFocus();
+            if (focused != null && focused.getId() == R.id.card) {
+                int pos = grid.getChildAdapterPosition((View) focused.getParent());
+                if (pos >= 0) onTileFocused(pos, focused);
+            }
+        });
 
         // Keep the glass glued to its tile while the grid scrolls.
         grid.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView rv, int dx, int dy) {
                 if (!glassShown) return;
+                if (singleRow && dx != 0) {
+                    springX.cancel();
+                    glassTargetX -= dx;
+                    glass.setTranslationX(glassTargetX);
+                }
                 glassTargetY -= dy;
                 glassScrollShift -= dy;
                 glass.setTranslationY(glass.getTranslationY() - dy);
@@ -373,7 +394,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (keyCode == KeyEvent.KEYCODE_DPAD_UP) return true;
             if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
                 // Back to the dock tile Up came from, not wherever the focus finder lands.
-                focusTile(lastFocused % COLUMNS);
+                focusTile(singleRow ? lastFocused : lastFocused % COLUMNS);
                 return true;
             }
             int firstButton = btnInputs.getVisibility() == View.VISIBLE ? R.id.btnInputs : R.id.btnWifi;
@@ -409,7 +430,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         TvInputManager tim = (TvInputManager) getSystemService(TV_INPUT_SERVICE);
         if (tim != null) tim.registerCallback(inputCallback, handler);
         if (cm != null) {
-            cm.registerDefaultNetworkCallback(networkCallback);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                cm.registerDefaultNetworkCallback(networkCallback);
+            } else {
+                cm.registerNetworkCallback(new NetworkRequest.Builder()
+                        .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                        .build(), networkCallback);
+            }
             cm.registerNetworkCallback(new NetworkRequest.Builder()
                     .addTransportType(NetworkCapabilities.TRANSPORT_VPN)
                     .removeCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
@@ -672,7 +699,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             springY.animateToFinalPosition(y - glassScrollShift);
         }
         View item = (View) card.getParent();
-        if (position < COLUMNS) {
+        if (singleRow) {
+            showHero(position, r.top);
+            Rect want = new Rect(-(int) pad * 2, 0, item.getWidth() + (int) pad * 2, item.getHeight());
+            grid.requestChildRectangleOnScreen(item, want, !animations || reducedMotion);
+        } else if (position < COLUMNS) {
             // Dock: park it at the bottom of the screen and show the top shelf for this app.
             int decoratedTop = item.getTop() - (int) (6 * density);
             int dy = decoratedTop - grid.getPaddingTop();
@@ -834,6 +865,18 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     public boolean onTileVerticalKey(int position, int keyCode) {
         int count = adapter.getItemCount();
+        if (singleRow) {
+            if (keyCode == KeyEvent.KEYCODE_DPAD_UP) return false;
+            if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) return true;
+            int next = GridNavigation.horizontalTarget(position, count, rtlAppGrid,
+                    keyCode == KeyEvent.KEYCODE_DPAD_LEFT);
+            if (next != position) {
+                focusTile(next);
+                grid.playSoundEffect(keyCode == KeyEvent.KEYCODE_DPAD_LEFT
+                        ? SoundEffectConstants.NAVIGATION_LEFT : SoundEffectConstants.NAVIGATION_RIGHT);
+            }
+            return true;
+        }
         int target;
         // Horizontal: swallow the key at a row's ends so focus never wraps to the next row or
         // escapes up into the top bar. Mid-row moves fall through to the default focus search.
@@ -1065,7 +1108,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         boolean any = liveTvIntent() != null || !sourcePanelService.isEmpty();
         TvInputManager tim = (TvInputManager) getSystemService(TV_INPUT_SERVICE);
         if (!any && tim != null) {
-            for (TvInputInfo info : tim.getTvInputList()) {
+            for (TvInputInfo info : tvInputs(tim)) {
                 if (info.isPassthroughInput()) {
                     any = true;
                     break;
@@ -1073,6 +1116,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             }
         }
         btnInputs.setVisibility(any ? View.VISIBLE : View.GONE);
+    }
+
+    private List<TvInputInfo> tvInputs(TvInputManager tim) {
+        if (tim == null) return Collections.emptyList();
+        try {
+            return tim.getTvInputList();
+        } catch (NullPointerException unavailable) {
+            // Some Coocaa firmware exposes TvInputManager without its backing system service.
+            return Collections.emptyList();
+        }
     }
 
     /** The Live TV app's launch intent: its leanback entry point, or the configured action if it has none. */
@@ -1139,7 +1192,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         String tunerId = null;
         boolean tunerIsHw = false;
         if (tim != null) {
-            List<TvInputInfo> inputs = new ArrayList<>(tim.getTvInputList());
+            List<TvInputInfo> inputs = new ArrayList<>(tvInputs(tim));
             // HDMI ports first in port order, then AV and the rest.
             Collections.sort(inputs, (a, b) -> {
                 boolean ha = a.getType() == TvInputInfo.TYPE_HDMI, hb = b.getType() == TvInputInfo.TYPE_HDMI;

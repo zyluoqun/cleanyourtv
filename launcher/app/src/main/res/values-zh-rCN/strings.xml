@@ -34,4 +34,9 @@
     <string name="cant_open">无法打开 %1$s</string>
     <string name="date_format">M月d日 EEEE</string>
     <string name="dream_name">时钟</string>
+    <string name="usb_files">U 盘／文件管理</string>
+    <string name="app_visibility">应用显示／隐藏</string>
+    <string name="app_visibility_title">勾选要显示的应用</string>
+    <string name="save_app_visibility">保存</string>
+    <string name="app_visibility_hint">上下选择，按 OK 勾选，选“保存”后返回桌面生效。U 盘入口始终固定；隐藏应用仍可正常运行。</string>
 </resources>

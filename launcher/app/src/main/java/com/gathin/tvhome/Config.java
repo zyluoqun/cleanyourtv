@@ -45,6 +45,7 @@ final class Config {
     final String sourcePanelAction;
     final String inputAction;
     final int columns;
+    final boolean singleRow;
     final boolean animations;
     final boolean advancedEffects;
     final int rowsBelowDock;
@@ -75,7 +76,7 @@ final class Config {
                    boolean shamsiDate, boolean moduleCards, boolean reducedMotion, String vpnApp,
                    boolean showHomeSettingsShortcut, int backgroundColor, int skyIntensity,
                    int[] settingsKeycodes, boolean settingsKeyPanel, File wallpaper, boolean overlayApplied,
-                   Festival festival) {
+                   Festival festival, boolean singleRow) {
         this.dockApps = Collections.unmodifiableList(dockApps);
         this.fillDock = fillDock;
         this.hiddenApps = Collections.unmodifiableList(hiddenApps);
@@ -85,6 +86,7 @@ final class Config {
         this.sourcePanelAction = sourcePanelAction;
         this.inputAction = inputAction;
         this.columns = columns;
+        this.singleRow = singleRow;
         this.rowsBelowDock = rowsBelowDock;
         this.animations = animations;
         this.advancedEffects = advancedEffects;
@@ -118,6 +120,7 @@ final class Config {
         String panelAction = res.getString(R.string.source_panel_action).trim();
         String inputAction = res.getString(R.string.input_action).trim();
         int columns = res.getInteger(R.integer.columns);
+        boolean singleRow = false;
         int rowsBelow = res.getInteger(R.integer.rows_below_dock);
         boolean animations = res.getBoolean(R.bool.animations);
         boolean advancedEffects = res.getBoolean(R.bool.advanced_effects);
@@ -146,6 +149,7 @@ final class Config {
             panelAction = string(json, "source_panel_action", panelAction);
             inputAction = string(json, "input_action", inputAction);
             columns = integer(json, "columns", columns, 1, 8);
+            singleRow = bool(json, "single_row", singleRow);
             rowsBelow = integer(json, "rows_below_dock", rowsBelow, 0, 3);
             animations = bool(json, "animations", animations);
             advancedEffects = bool(json, "advanced_effects", advancedEffects);
@@ -163,6 +167,9 @@ final class Config {
         // current theme without clearing choices from an older launcher version.
         SharedPreferences choices = ctx.getSharedPreferences(SETTINGS_NAME, Context.MODE_PRIVATE);
         syncThemeChoices(choices, dir, file);
+        hidden = new ArrayList<>(AppVisibility.hidden(hidden,
+                choices.getStringSet(AppVisibility.HIDDEN_KEY, null)));
+        if (!dock.contains(AppVisibility.USB_PACKAGE)) dock.add(AppVisibility.USB_PACKAGE);
         int chosenColumns = choices.getInt("columns", columns);
         if (chosenColumns >= 4 && chosenColumns <= 7) columns = chosenColumns;
         animations = choices.getBoolean("animations", animations);
@@ -179,7 +186,7 @@ final class Config {
                 Math.max(1, columns), Math.max(0, rowsBelow), animations, advancedEffects,
                 shamsi, moduleCards, reducedMotion, vpn, homeSettings, background,
                 Math.max(0, Math.min(100, skyIntensity)), settingsKeycodes, settingsKeyPanel, wallpaper, applied,
-                festival);
+                festival, singleRow);
     }
 
     private static void syncThemeChoices(SharedPreferences choices, File dir, File config) {

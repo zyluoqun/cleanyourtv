@@ -3,8 +3,22 @@ package com.gathin.tvhome;
 import org.junit.Test;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 public class GridNavigationTest {
+    @Test public void horizontalRowReachesFifthAppWithoutWrapping() {
+        assertEquals(4, GridNavigation.horizontalTarget(3, 5, false, false));
+        assertEquals(4, GridNavigation.horizontalTarget(4, 5, false, false));
+        assertEquals(3, GridNavigation.horizontalTarget(4, 5, false, true));
+        assertEquals(0, GridNavigation.horizontalTarget(0, 5, false, true));
+    }
+
+    @Test public void horizontalRowRespectsReadingDirectionAndSingleApp() {
+        assertEquals(1, GridNavigation.horizontalTarget(0, 5, true, true));
+        assertEquals(0, GridNavigation.horizontalTarget(0, 5, true, false));
+        assertEquals(0, GridNavigation.horizontalTarget(0, 1, false, false));
+        assertEquals(0, GridNavigation.horizontalTarget(0, 1, false, true));
+    }
     @Test public void hebrewDockStartsOnTheRightAndStopsAtTheLeft() {
         assertTrue(GridNavigation.atHorizontalEdge(0, 11, 4, true, false));
         assertFalse(GridNavigation.atHorizontalEdge(0, 11, 4, true, true));
