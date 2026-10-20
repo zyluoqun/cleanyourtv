@@ -416,16 +416,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             });
         }
 
-        // Keep the glass glued to its tile while the grid scrolls.
+        // Vertical scrolling shifts the glass; the horizontal row is aligned from its
+        // focused tile before drawing, so applying dx here would move it a second time.
         grid.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView rv, int dx, int dy) {
                 if (!glassShown) return;
-                if (singleRow && dx != 0) {
-                    springX.cancel();
-                    glassTargetX -= dx;
-                    glass.setTranslationX(glassTargetX);
-                }
                 glassTargetY -= dy;
                 glassScrollShift -= dy;
                 glass.setTranslationY(glass.getTranslationY() - dy);
