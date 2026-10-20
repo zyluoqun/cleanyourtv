@@ -89,6 +89,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** Tiles per row and dock slots (res/values/config.xml, columns). Set in onCreate. */
     static int COLUMNS = 4;
     private boolean singleRow;
+    private final Rect singleRowFocusBounds = new Rect();
+    private int singleRowFocusPosition = -1;
     private boolean rtlAppGrid;
     private static final long MINUTE_MS = 60_000L;
     private static final long STATS_MS = 10_000L;
@@ -395,15 +397,24 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 grid.setPadding(grid.getPaddingLeft(), want, grid.getPaddingRight(), grid.getPaddingBottom());
             }
         });
-        if (singleRow) grid.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
-            // Horizontal children can receive initial focus before the bottom padding is laid out.
-            // Align the highlight and title with the final tile position as well.
-            View focused = grid.findFocus();
-            if (focused != null && focused.getId() == R.id.card) {
-                int pos = grid.getChildAdapterPosition((View) focused.getParent());
-                if (pos >= 0) onTileFocused(pos, focused);
-            }
-        });
+        if (singleRow) {
+            grid.getViewTreeObserver().addOnPreDrawListener(() -> {
+                // Padding can move the horizontal children after their initial focus event.
+                // Read their final coordinates before drawing, without restarting effects every frame.
+                View focused = grid.findFocus();
+                if (focused != null && focused.getId() == R.id.card) {
+                    int pos = grid.getChildAdapterPosition((View) focused.getParent());
+                    Rect bounds = new Rect(0, 0, focused.getWidth(), focused.getHeight());
+                    root.offsetDescendantRectToMyCoords(focused, bounds);
+                    if (pos >= 0 && (pos != singleRowFocusPosition || !bounds.equals(singleRowFocusBounds))) {
+                        onTileFocused(pos, focused);
+                    }
+                } else {
+                    singleRowFocusPosition = -1;
+                }
+                return true;
+            });
+        }
 
         // Keep the glass glued to its tile while the grid scrolls.
         grid.addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -1025,6 +1036,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // Tile rect in root coordinates, using layout positions (ignores the scale animation).
         Rect r = new Rect(0, 0, card.getWidth(), card.getHeight());
         root.offsetDescendantRectToMyCoords(card, r);
+        if (singleRow) {
+            singleRowFocusPosition = position;
+            singleRowFocusBounds.set(r);
+        }
         float pad = 6f * density;        // matches GlassView's glow inset
         float scale = adapter.focusScale();
         float w = card.getWidth() * scale + 2 * pad;
@@ -1551,12 +1566,19 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             return;
         }
         final int pos = adapter.focusablePosition(Math.max(0, Math.min(position, adapter.appCount() - 1)));
+        if (!grid.isLaidOut() || grid.isLayoutRequested() || grid.hasPendingAdapterUpdates()) {
+            // A holder can exist before the bottom padding and adapter update are applied.
+            // Focusing it then loses focus when RecyclerView lays out the horizontal row.
+            grid.scrollToPosition(pos);
+            refocusAfterLayout(pos);
+            return;
+        }
         RecyclerView.ViewHolder vh = grid.findViewHolderForAdapterPosition(pos);
         if (vh != null) {
             View card = vh.itemView.findViewById(R.id.card);
             // Already focused (e.g. back from an app): no focus change fires, so restore the glass by hand.
             if (card.isFocused()) onTileFocused(pos, card);
-            else card.requestFocus();
+            else requestTileFocus(card);
             return;
         }
         // Not laid out yet: scroll there, then focus once the scroll settles.
@@ -1564,7 +1586,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             grid.scrollToPosition(pos);
             grid.post(() -> {
                 RecyclerView.ViewHolder h = grid.findViewHolderForAdapterPosition(pos);
-                if (h != null) h.itemView.findViewById(R.id.card).requestFocus();
+                if (h != null) requestTileFocus(h.itemView.findViewById(R.id.card));
             });
             return;
         }
@@ -1577,11 +1599,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 pendingFocusScroll = null;
                 RecyclerView.ViewHolder h = rv.findViewHolderForAdapterPosition(pos);
                 View target = h != null ? h.itemView.findViewById(R.id.card) : rv.getChildAt(0);
-                if (target != null) target.requestFocus();
+                if (target != null) requestTileFocus(target);
             }
         };
         grid.addOnScrollListener(pendingFocusScroll);
         grid.smoothScrollToPosition(pos);
+    }
+
+    private void requestTileFocus(View card) {
+        // Coocaa's screensaver and APK installer can leave the TV in touch mode.
+        // A remote-operated Home still needs a selected tile before the next key press.
+        if (!card.requestFocus()) card.requestFocusFromTouch();
     }
 
     // ---- top bar ---------------------------------------------------------------------------------
