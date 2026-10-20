@@ -112,13 +112,18 @@ public final class LauncherSettingsActivity extends Activity {
         apps.sort((a, b) -> String.valueOf(a.loadLabel(getPackageManager())).compareToIgnoreCase(
                 String.valueOf(b.loadLabel(getPackageManager()))));
         Set<String> hidden = new HashSet<>(Config.load(this).hiddenApps);
+        Set<String> added = LibraryApps.load(this);
+        Set<String> removed = LibraryApps.loadRemoved(this);
         String[] labels = new String[apps.size()];
         boolean[] checked = new boolean[apps.size()];
         for (int i = 0; i < apps.size(); i++) {
             ResolveInfo ri = apps.get(i);
             labels[i] = Cards.cleanLabel(String.valueOf(ri.loadLabel(getPackageManager())), ri.activityInfo.packageName);
-            checked[i] = !hidden.contains(ri.activityInfo.packageName);
+            String pkg = ri.activityInfo.packageName;
+            checked[i] = AppVisibility.shown(pkg, hidden.contains(pkg), added.contains(pkg), removed.contains(pkg));
+            if (checked[i]) hidden.remove(pkg); else hidden.add(pkg);
         }
+        boolean[] before = checked.clone();
         AlertDialog dialog = new AlertDialog.Builder(this)
                 .setTitle(R.string.app_visibility_title)
                 .setMultiChoiceItems(labels, checked, (d, which, show) -> {
@@ -126,6 +131,14 @@ public final class LauncherSettingsActivity extends Activity {
                     if (show) hidden.remove(pkg); else hidden.add(pkg);
                 })
                 .setPositiveButton(R.string.save_app_visibility, (d, which) -> {
+                    for (int i = 0; i < apps.size(); i++) {
+                        String pkg = apps.get(i).activityInfo.packageName;
+                        boolean show = !hidden.contains(pkg);
+                        if (show != before[i] && !LibraryApps.save(this, pkg, show)) {
+                            Toast.makeText(this, R.string.not_available, Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                    }
                     choices.edit().putStringSet(AppVisibility.HIDDEN_KEY, hidden).apply();
                     setResult(RESULT_OK);
                 })

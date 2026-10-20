@@ -8,6 +8,16 @@ import java.util.Set;
 import static org.junit.Assert.*;
 
 public class AppVisibilityTest {
+    @Test public void upgradeKeepsLegacyHiddenChoicesUntilExplicitLibraryChange() {
+        assertFalse(AppVisibility.shown("hidden.app", true, false, false));
+        assertTrue(AppVisibility.shown("visible.app", false, false, false));
+        assertTrue(AppVisibility.shown("hidden.app", true, true, false));
+        assertFalse(AppVisibility.shown("visible.app", false, true, true));
+    }
+
+    @Test public void usbStaysPinnedEvenWhenLibraryRemovalExists() {
+        assertTrue(AppVisibility.shown(AppVisibility.USB_PACKAGE, true, false, true));
+    }
     @Test public void firstUseKeepsThemeHiddenApps() {
         assertTrue(AppVisibility.hidden(Arrays.asList("theme.app"), null).contains("theme.app"));
     }
