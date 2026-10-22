@@ -14,10 +14,16 @@ import java.util.Map;
 /** Prefer TV entry points, then include ordinary launcher apps without duplicate packages. */
 final class AppCatalog {
     static List<ResolveInfo> discover(Context context) {
+        return discover(context, context.getPackageManager().queryIntentActivities(
+                new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER), 0));
+    }
+
+    static List<ResolveInfo> discover(Context context, List<ResolveInfo> leanback) {
         PackageManager pm = context.getPackageManager();
         Map<String, ResolveInfo> apps = new LinkedHashMap<>();
         for (String category : new String[]{Intent.CATEGORY_LEANBACK_LAUNCHER, Intent.CATEGORY_LAUNCHER}) {
-            for (ResolveInfo ri : pm.queryIntentActivities(new Intent(Intent.ACTION_MAIN).addCategory(category), 0)) {
+            for (ResolveInfo ri : Intent.CATEGORY_LEANBACK_LAUNCHER.equals(category) ? leanback
+                    : pm.queryIntentActivities(new Intent(Intent.ACTION_MAIN).addCategory(category), 0)) {
                 if (ri.activityInfo == null || !ri.activityInfo.exported || !ri.activityInfo.enabled) continue;
                 String pkg = ri.activityInfo.packageName;
                 if (!pkg.equals(context.getPackageName()) && !apps.containsKey(pkg)) apps.put(pkg, ri);
