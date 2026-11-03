@@ -658,6 +658,7 @@ final class Config {
         hidden = new ArrayList<>(AppVisibility.hidden(hidden,
                 choices.getStringSet(AppVisibility.HIDDEN_KEY, null)));
         if (!dock.contains(AppVisibility.USB_PACKAGE)) dock.add(AppVisibility.USB_PACKAGE);
+        if (!dock.contains(AppVisibility.TCL_USB_PACKAGE)) dock.add(AppVisibility.TCL_USB_PACKAGE);
         int chosenColumns = choices.getInt("columns", columns);
         if (chosenColumns >= 4 && chosenColumns <= 7) columns = chosenColumns;
         int chosenRows = choices.getInt(ROWS_BELOW_DOCK_KEY, rowsBelow);

@@ -13,7 +13,7 @@ android {
         applicationId providers.gradleProperty('launcherApplicationId').getOrElse('com.gathin.tvhome')
         minSdk 23
         targetSdk 34
-        versionCode 12
+        versionCode 14
         versionName '3.3'
     }
 

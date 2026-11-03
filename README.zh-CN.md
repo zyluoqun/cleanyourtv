@@ -1,3 +1,5 @@
+> 此分支是 TCL／雷鸟 Android 9 维护版。适配、构建和恢复说明见 [TCL.zh-CN.md](TCL.zh-CN.md)；酷开电视请使用 [skyworth-api23 分支](https://github.com/zyluoqun/cleanyourtv/tree/skyworth-api23)。
+
 <p align="center">
   <a href="https://cleanyour.tv"><img src="docs/banner.png" alt="CleanYourTV：让电视桌面回归简洁" width="800"></a>
 </p>

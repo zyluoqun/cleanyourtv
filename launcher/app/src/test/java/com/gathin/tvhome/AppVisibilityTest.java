@@ -18,6 +18,16 @@ public class AppVisibilityTest {
     @Test public void usbStaysPinnedEvenWhenLibraryRemovalExists() {
         assertTrue(AppVisibility.shown(AppVisibility.USB_PACKAGE, true, false, true));
     }
+    @Test public void tclUsbStaysPinnedEvenWhenLibraryRemovalExists() {
+        assertTrue(AppVisibility.shown("com.tcl.ui_mediaCenter", true, false, true));
+    }
+    @Test public void tclUsbCannotBeHiddenAndSavedChoicesAreUnchanged() {
+        Set<String> saved = new HashSet<>(Arrays.asList("com.tcl.ui_mediaCenter", "hidden.app"));
+        Set<String> hidden = AppVisibility.hidden(Collections.emptyList(), saved);
+        assertFalse(hidden.contains("com.tcl.ui_mediaCenter"));
+        assertTrue(hidden.contains("hidden.app"));
+        assertTrue(saved.contains("com.tcl.ui_mediaCenter"));
+    }
     @Test public void firstUseKeepsThemeHiddenApps() {
         assertTrue(AppVisibility.hidden(Arrays.asList("theme.app"), null).contains("theme.app"));
     }

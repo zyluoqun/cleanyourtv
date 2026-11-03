@@ -297,7 +297,7 @@ public final class LauncherSettingsActivity extends Activity {
 
     private void showAppVisibility() {
         List<ResolveInfo> apps = AppCatalog.discover(this);
-        apps.removeIf(ri -> AppVisibility.USB_PACKAGE.equals(ri.activityInfo.packageName));
+        apps.removeIf(ri -> AppVisibility.isUsbPackage(ri.activityInfo.packageName));
         apps.sort((a, b) -> String.valueOf(a.loadLabel(getPackageManager())).compareToIgnoreCase(
                 String.valueOf(b.loadLabel(getPackageManager()))));
         Set<String> hidden = new HashSet<>(Config.load(this).hiddenApps);
@@ -329,7 +329,7 @@ public final class LauncherSettingsActivity extends Activity {
                         }
                     }
                     choices.edit().putStringSet(AppVisibility.HIDDEN_KEY, hidden).apply();
-                    setResult(RESULT_OK);
+                    changed();
                 })
                 .setNegativeButton(android.R.string.cancel, null)
                 .create();

@@ -80,7 +80,8 @@
         android:localeConfig="@xml/locales_config">
 
         <activity
-            android:name=".MainActivity"
+            android:name=".BootHomeActivity"
+            android:directBootAware="true"
             android:exported="true"
             android:launchMode="singleTask"
             android:stateNotNeeded="true"
@@ -100,6 +101,17 @@
                      docs/devices/oppo-k9-55-oppocnm632.md (prior art: aerial-tv oppo-coloros-tv.md). -->
                 <category android:name="com.heytap.tv.launcher.category.MODERN_HOME" />
             </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:stateNotNeeded="true"
+            android:excludeFromRecents="true"
+            android:clearTaskOnLaunch="true"
+            android:configChanges="orientation|screenSize|keyboard|keyboardHidden|uiMode"
+            android:screenOrientation="landscape">
             <!-- Listed in the TV's own app list, so it can be opened from the stock home screen too. -->
             <!-- Coocaa firmware uses private home intents instead of the standard HOME category. -->
             <intent-filter>
