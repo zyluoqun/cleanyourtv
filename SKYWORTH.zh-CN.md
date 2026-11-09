@@ -1,6 +1,6 @@
 # 创维酷开 9R66_A7 定制版
 
-本分支基于 [Gathin23/cleanyourtv 的 v3.3.0 正式版](https://github.com/Gathin23/cleanyourtv/releases/tag/v3.3.0)，用于 Android 6.0 / API 23 的创维酷开电视。保留原项目许可证及署名。
+本分支基于 [Gathin23/cleanyourtv 的 v3.4.0 正式版](https://github.com/Gathin23/cleanyourtv/releases/tag/v3.4.0)，用于 Android 6.0 / API 23 的创维酷开电视。保留原项目许可证及署名。
 
 - `main`：原项目源码。本次创建仓库时已同步到当时的上游主分支，可能包含正式版之后的提交。
 - `skyworth-api23`：电视定制版，按正式版标签升级。请在此分支维护定制。
@@ -31,7 +31,7 @@ New-Item -ItemType Directory -Force -Path 'C:\tv-javatmp' | Out-Null
 .\launcher\gradlew.bat -p launcher testReleaseUnitTest lintRelease assembleRelease --console=plain --no-daemon
 ```
 
-APK 位于 `launcher/app/build/outputs/apk/release/app-release.apk`。本版 `versionName=3.3`、`versionCode=12`、`minSdk=23`。
+APK 位于 `launcher/app/build/outputs/apk/release/app-release.apk`。本版 `versionName=3.4`、`versionCode=13`、`minSdk=23`。
 
 覆盖安装必须沿用原有 APK 签名密钥；本机沿用最初构建使用的密钥。私钥、ADB 授权密钥、电视配置备份和截图均不上传 GitHub。其他电脑自行构建会使用它自己的调试密钥，不能直接覆盖这台电视已装的版本。
 
@@ -48,6 +48,8 @@ APK 位于 `launcher/app/build/outputs/apk/release/app-release.apk`。本版 `ve
 2026-11-05：加入原生 Home 路由恢复，停用会触发系统剪贴板空指针的 Home 辅助服务。321 项单元测试通过，Release 构建通过，Lint 0 错误；覆盖安装沿用原签名和版本号，配置保留。实体 Home、四个应用的启动及 Home 返回、正常重启后的自动桌面/路由恢复、SmartTube 搜索输入与 Home 返回均通过；未发现新的崩溃记录。未做断电冷启动或长时间播放测试。
 
 ## 本机维护约束
+
+2026-11-09：升级至官方 V3.4.0，保留 11 月 5 日的原生 Home 路由及辅助功能停用方案。327 项单元测试通过，Release 构建成功，API 23 Lint 为 0 错误。电视端安装及实体遥控器结果另行记录，不以构建结果代替。
 
 - ADB 仅允许一条连接，所有电视操作串行。
 - 没有 `cmd` 和 `pm set-home-activity`，不能套用新版 Android 的默认桌面设置脚本。
