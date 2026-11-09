@@ -1,6 +1,7 @@
 # TCL／雷鸟 Android 9 维护版
 
-本分支 `tcl-android9` 保存已部署的 CleanYourTV 3.3 TCL 维护版，`versionCode 14`。
+本分支 `tcl-android9` 保存已部署的 CleanYourTV 3.4 TCL 维护版，`versionCode 15`。
+2026-11-09 合并上游正式版 `v3.4.0`，保留此前 TCL 定制及签名/包名更新方式。
 基于本仓库 `skyworth-api23` 的提交 `141861486e301d83385b7f077a3908bf787f0007`，
 保留原项目许可证、署名及 Android 6 兼容代码；TCL 改动在此分支独立维护。
 酷开电视继续使用 [`skyworth-api23`](https://github.com/zyluoqun/cleanyourtv/tree/skyworth-api23)。
@@ -25,7 +26,8 @@
 3. **U 盘入口**：把原厂 `com.tcl.ui_mediaCenter` 固定为“U 盘／文件管理”卡片，
    不受旧隐藏记录影响，也不在应用显示选择中重复出现；保留原有酷开文件管理器支持。
    打开后选择 U 盘，再进入 `Browse Folders` 浏览目录。未加入额外文件管理器。
-4. **升级版本号**：`versionName 3.3`，`versionCode 14`。
+4. **升级版本号**：`versionName 3.4`，`versionCode 15`，高于此前本机维护版本。
+5. **上游 3.4 修复**：包括 TCL Android 9 待机后时钟刷新、输入键路由及其它上游正式版修复。
 
 ## 构建
 
@@ -47,10 +49,10 @@ Release 沿用此分支既有的本机 Android debug 签名配置。覆盖更新
 仅从另一台电脑重新构建不能保证可覆盖安装。签名私钥留在本电脑，不进入 GitHub。
 后续更新应增加 `versionCode`，保留包名和签名，不卸载旧应用、不清数据。
 
-本次实装 APK 为 826,520 字节，SHA256：
+3.4 本次实装 APK 为 827,606 字节，SHA256：
 
 ```text
-07aa49550592adae1d96fdb5a143a667789069065a9c56f0365d2f59d629f4d6
+912ea8151badbcfea3275932b8c1c6bd6835dcfa6b49207ed34f2331de421557
 ```
 
 该散列用于核对本次本机构建与实装文件，不表示不同环境重新构建必然逐字节相同。
@@ -112,6 +114,16 @@ am start -n com.tcl.cyberui/.MainActivity
 “有线频道”对应独立应用 `com.tcl.tliveplay`，不等同于基础电视包 `com.tcl.tv`。
 
 ## 验证记录与后续维护
+
+2026-11-09 升级 3.4：
+
+- 325 项 JVM 测试通过、Lint 0 错误；签名与此前实装版一致。
+- 备份更新前 APK、外部配置与系统状态后覆盖安装，未卸载、清除数据或改动停用清单。
+- 保留 `BootHomeActivity`、固定 U 盘卡片及应用显示保存刷新修复。
+- 更新前桌面及显示选择已读取；更新后隐藏/恢复 SmartTube 即时生效，最后恢复原显示状态。
+- 实机卡片数 `7 → 6 → 7`，默认 HOME、升级前停用清单和实装 APK 散列均已核对；U 盘目录可打开，时钟跨分钟更新正常。
+- 文档链接检查 10 项通过。完整 Python 工具测试在本机默认 GBK 环境遇到子进程解码错误后中止，未宣称全仓工具测试通过。
+- 本轮未重启或切换待机；冷启动及待机恢复测试仍不以模拟 Home 代替。
 
 2026-11-04：
 
