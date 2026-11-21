@@ -23,6 +23,11 @@ public class HomeKeyServiceTest {
         assertFalse(HomeKeyService.coocaaHome("com.tianci.movieplatform", null));
     }
 
+    @Test public void aKeyOnHomeWithNoHelperBoundDoesNothing() {
+        HomeKeyService.running = null;
+        HomeKeyService.keyOnHome();
+    }
+
     @Test public void aTapIsAShortPress() {
         assertTrue(HomeKeyService.isShortPress(1_000, 1_120, 400));
     }
